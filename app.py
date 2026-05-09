@@ -65,7 +65,7 @@ if uploaded_file:
     with col1:
         st.image(image, caption="업로드된 성가표")
 
-    os.environ["TESSDATA_PREFIX"] = "/opt/homebrew/share/tessdata/"
+    #os.environ["TESSDATA_PREFIX"] = "/opt/homebrew/share/tessdata/"
     text = pytesseract.image_to_string(image, lang="kor")
 
     hymns = extract_hymns(text)
