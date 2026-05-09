@@ -2,3 +2,5 @@ streamlit
 pillow
 pytesseract
 pdfkit
+opencv-python-headless
+numpy
