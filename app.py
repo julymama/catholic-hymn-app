@@ -4,6 +4,8 @@ import pytesseract
 import re
 from urllib.parse import quote
 import os
+import cv2
+import numpy as np
 
 st.set_page_config(
     page_title="가톨릭 성가 테너 링크 생성기",
@@ -56,6 +58,26 @@ def extract_hymns(text):
     return results
 
 
+def preprocess_image(image):
+    # PIL 이미지를 numpy 배열로 변환
+    img_array = np.array(image)
+    
+    # RGB 이미지를 BGR로 변환 (OpenCV 형식)
+    if len(img_array.shape) == 3 and img_array.shape[2] == 3:
+        img_array = cv2.cvtColor(img_array, cv2.COLOR_RGB2BGR)
+        
+    # 흑백(Grayscale) 이미지로 변환
+    gray = cv2.cvtColor(img_array, cv2.COLOR_BGR2GRAY)
+    
+    # 해상도를 2배로 키워 인식률 향상
+    gray = cv2.resize(gray, None, fx=2, fy=2, interpolation=cv2.INTER_CUBIC)
+    
+    # 이진화 (Thresholding) - 배경과 글자를 명확히 분리
+    _, thresh = cv2.threshold(gray, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
+    
+    return Image.fromarray(thresh)
+
+
 if uploaded_file:
 
     image = Image.open(uploaded_file)
@@ -65,8 +87,15 @@ if uploaded_file:
     with col1:
         st.image(image, caption="업로드된 성가표")
 
+    # 이미지 전처리 적용
+    processed_image = preprocess_image(image)
+    
+    with st.expander("⚙️ 전처리된 이미지 보기"):
+        st.image(processed_image, caption="흑백/이진화 처리된 이미지")
+
     #os.environ["TESSDATA_PREFIX"] = "/opt/homebrew/share/tessdata/"
-    text = pytesseract.image_to_string(image, lang="kor")
+    # 언어에 영어(숫자 인식 강화) 추가 및 PSM 옵션 변경 (목록 형태에 적합한 6)
+    text = pytesseract.image_to_string(processed_image, lang="kor+eng", config="--psm 6")
 
     hymns = extract_hymns(text)
 
